@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Oración</title>
+<link rel="manifest" href="data:application/manifest+json,{%22name%22:%22Oraci%C3%B3n%22,%22short_name%22:%22Oraci%C3%B3n%22,%22display%22:%22standalone%22,%22background_color%22:%22%23FAF0DF%22,%22theme_color%22:%22%23C1592B%22}">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  :root{
+    --bg: #FAF0DF;
+    --bg-soft: #F3E2C4;
+    --card: #FFFCF5;
+    --ink: #3B2A20;
+    --ink-muted: #8A7362;
+    --clay: #C1592B;
+    --clay-dark: #9C4520;
+    --gold: #D9A441;
+    --border: #E8D5B4;
+    --danger: #B14538;
+    --radius: 18px;
+    --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-read: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+    --reading-size: 22px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom: 90px;
+  }
+  .app{max-width:640px;margin:0 auto;padding:0 16px;}
+
+  /* HEADER */
+  header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 0 10px 0;
+  }
+  header h1{
+    font-family:var(--font-read);
+    font-size:26px;
+    margin:0;
+    color:var(--clay-dark);
+    letter-spacing:.3px;
+    font-weight:700;
+  }
+  .icon-btn{
+    background:none;border:none;cursor:pointer;
+    color:var(--clay-dark);
+    padding:8px;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;
+    transition:background .15s;
+  }
+  .icon-btn:hover{background:var(--bg-soft);}
+  .icon-btn svg{width:22px;height:22px;}
+  .header-actions{display:flex;gap:2px;align-items:center;}
+  .drive-status-line{
+    font-size:12px;color:var(--ink-muted);text-align:right;margin:-4px 0 8px 0;
+    display:flex;align-items:center;justify-content:flex-end;gap:6px;
+  }
+  .drive-status-line .dot{width:7px;height:7px;border-radius:50%;background:var(--ink-muted);}
+  .drive-status-line.connected{color:var(--clay-dark);}
+  .drive-status-line.connected .dot{background:#5C8A5C;}
+  .drive-status-line.error{color:var(--danger);}
+  .drive-status-line.error .dot{background:var(--danger);}
+
+  .fontsize-controls{display:flex;align-items:center;gap:2px;background:var(--bg-soft);border-radius:14px;padding:2px;}
+  .fontsize-controls button{
+    background:none;border:none;color:var(--clay-dark);font-weight:700;
+    width:34px;height:34px;border-radius:12px;cursor:pointer;font-family:var(--font-ui);
+  }
+  .fontsize-controls button:active{background:var(--gold);color:#fff;}
+
+  /* SEARCH */
+  .search-wrap{display:none;margin-bottom:14px;}
+  .search-wrap.open{display:block;}
+  .search-tabs{display:flex;gap:8px;align-items:center;margin-bottom:10px;}
+  .search-tab{
+    background:var(--bg-soft);border:none;padding:8px 14px;border-radius:12px;
+    font-size:13px;font-weight:700;color:var(--ink-muted);cursor:pointer;font-family:var(--font-ui);
+  }
+  .search-tab.active{background:var(--clay);color:#fff;}
+  .web-search-row{display:flex;gap:8px;margin-bottom:10px;}
+  .btn-search-web{
+    background:var(--clay);color:#fff;border:none;border-radius:12px;padding:0 18px;
+    font-weight:700;cursor:pointer;font-family:var(--font-ui);white-space:nowrap;
+  }
+  .search-input{
+    width:100%;padding:12px 16px;border-radius:14px;border:1px solid var(--border);
+    background:var(--card);font-size:16px;color:var(--ink);font-family:var(--font-ui);
+    outline:none;
+  }
+  .search-input:focus{border-color:var(--clay);}
+  .search-results{margin-top:10px;display:flex;flex-direction:column;gap:8px;}
+  .search-result{
+    background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 14px;
+    cursor:pointer;
+  }
+  .search-result:hover{border-color:var(--clay);}
+  .search-result .snippet{color:var(--ink-muted);font-size:14px;margin-top:4px;line-height:1.4;}
+  .search-result .tags{margin-top:6px;}
+  .empty-msg{color:var(--ink-muted);text-align:center;padding:20px;font-size:15px;}
+
+  /* DATE STRIP */
+  .date-strip{
+    text-align:center;margin: 6px 0 18px 0;color:var(--ink-muted);
+    font-size:14px;text-transform:capitalize;letter-spacing:.4px;
+  }
+  .date-strip strong{color:var(--clay-dark);}
+
+  /* CARD */
+  .card{
+    background:var(--card);
+    border-radius:var(--radius);
+    padding:28px 24px 20px 24px;
+    border:1px solid var(--border);
+    box-shadow: 0 6px 18px rgba(59,42,32,0.06);
+    position:relative;
+    min-height:220px;
+    display:flex;flex-direction:column;
+  }
+  .card::before{
+    content:"";
+    position:absolute;top:0;left:28px;
+    width:34px;height:14px;
+    background:var(--gold);
+    border-radius:0 0 6px 6px;
+    opacity:.85;
+  }
+  .card-text{
+    font-family:var(--font-read);
+    font-size:var(--reading-size);
+    line-height:1.6;
+    white-space:pre-wrap;
+    color:var(--ink);
+    flex:1;
+  }
+  .card-topics{margin-top:16px;display:flex;flex-wrap:wrap;gap:6px;}
+  .tag{
+    background:var(--bg-soft);color:var(--clay-dark);
+    font-size:12px;padding:4px 10px;border-radius:999px;
+    font-family:var(--font-ui);font-weight:600;
+  }
+  .card-footer{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-top:18px;padding-top:14px;border-top:1px solid var(--border);
+  }
+  .nav-btns{display:flex;align-items:center;gap:10px;}
+  .nav-btn{
+    background:var(--bg-soft);border:none;width:42px;height:42px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--clay-dark);
+  }
+  .nav-btn:disabled{opacity:.35;cursor:default;}
+  .nav-count{font-size:13px;color:var(--ink-muted);min-width:40px;text-align:center;}
+  .card-actions{display:flex;gap:6px;}
+
+  /* EMPTY STATE */
+  .empty-state{
+    text-align:center;padding:50px 20px;color:var(--ink-muted);
+  }
+  .empty-state .big{font-family:var(--font-read);font-size:20px;color:var(--clay-dark);margin-bottom:8px;}
+
+  /* FAB */
+  .fab{
+    position:fixed;right:22px;bottom:calc(78px + env(safe-area-inset-bottom));
+    width:58px;height:58px;border-radius:50%;
+    background:var(--clay);color:#fff;border:none;
+    box-shadow:0 8px 20px rgba(193,89,43,0.4);
+    font-size:28px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    z-index:20;
+    padding-bottom:2px;
+  }
+  .fab:active{background:var(--clay-dark);}
+
+  /* BOTTOM BAR */
+  .bottombar{
+    position:fixed;left:0;right:0;bottom:0;
+    background:var(--card);border-top:1px solid var(--border);
+    display:flex;justify-content:space-around;padding:8px 0 calc(8px + env(safe-area-inset-bottom));
+    z-index:15;
+  }
+  .bottombar button{
+    background:none;border:none;color:var(--ink-muted);
+    display:flex;flex-direction:column;align-items:center;gap:2px;
+    font-size:11px;font-family:var(--font-ui);cursor:pointer;padding:4px 14px;border-radius:10px;
+  }
+  .bottombar button.active{color:var(--clay-dark);}
+  .bottombar svg{width:22px;height:22px;}
+
+  /* MODAL */
+  .overlay{
+    position:fixed;inset:0;background:rgba(59,42,32,0.45);
+    display:none;align-items:flex-end;justify-content:center;z-index:50;
+  }
+  .overlay.open{display:flex;}
+  .modal{
+    background:var(--bg);
+    width:100%;max-width:640px;max-height:92vh;overflow-y:auto;
+    border-radius:22px 22px 0 0;
+    padding:20px 20px calc(24px + env(safe-area-inset-bottom)) 20px;
+  }
+  .modal h2{font-family:var(--font-read);color:var(--clay-dark);margin:0 0 16px 0;font-size:22px;}
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:13px;font-weight:700;color:var(--ink-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px;}
+  textarea, input[type=text], input[type=number], select{
+    width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);
+    background:var(--card);font-size:16px;color:var(--ink);font-family:var(--font-ui);outline:none;
+  }
+  textarea{font-family:var(--font-read);font-size:18px;line-height:1.5;min-height:140px;resize:vertical;}
+  textarea:focus, input:focus, select:focus{border-color:var(--clay);}
+  .weekday-picker{display:flex;gap:6px;flex-wrap:wrap;}
+  .weekday-chip{
+    width:44px;height:44px;border-radius:50%;border:1px solid var(--border);background:var(--card);
+    display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--ink-muted);
+    cursor:pointer;
+  }
+  .weekday-chip.selected{background:var(--clay);border-color:var(--clay);color:#fff;}
+  .radio-row{display:flex;gap:16px;margin-bottom:10px;flex-wrap:wrap;}
+  .radio-row label{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--ink);font-weight:500;text-transform:none;}
+  .relative-row{display:flex;gap:8px;}
+  .relative-row select{flex:1;}
+  .topics-input-row{display:flex;gap:8px;}
+  .topics-input-row input{flex:1;}
+  .topics-input-row button{
+    background:var(--bg-soft);border:none;border-radius:12px;padding:0 16px;color:var(--clay-dark);
+    font-weight:700;cursor:pointer;
+  }
+  .topics-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+  .topic-chip{
+    background:var(--bg-soft);color:var(--clay-dark);font-size:13px;padding:5px 8px 5px 12px;
+    border-radius:999px;display:flex;align-items:center;gap:6px;
+  }
+  .topic-chip button{background:none;border:none;color:var(--clay-dark);cursor:pointer;font-weight:700;padding:0 2px;}
+  .modal-actions{display:flex;gap:10px;margin-top:20px;}
+  .btn{
+    flex:1;padding:14px;border-radius:14px;border:none;font-size:16px;font-weight:700;
+    cursor:pointer;font-family:var(--font-ui);
+  }
+  .btn-primary{background:var(--clay);color:#fff;}
+  .btn-secondary{background:var(--bg-soft);color:var(--ink);}
+  .btn-danger{background:var(--danger);color:#fff;}
+  .hint{font-size:12px;color:var(--ink-muted);margin-top:4px;}
+
+  /* LIBRARY LIST */
+  .lib-item{
+    background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;
+  }
+  .lib-item .snippet{font-family:var(--font-read);color:var(--ink);font-size:16px;line-height:1.4;margin-bottom:8px;}
+  .lib-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+  .lib-actions{display:flex;gap:8px;margin-top:10px;}
+  .lib-actions button{background:var(--bg-soft);border:none;border-radius:10px;padding:8px 12px;font-size:12px;color:var(--clay-dark);font-weight:700;cursor:pointer;}
+  .lib-actions button.del{color:var(--danger);}
+
+  .toast{
+    position:fixed;bottom:100px;left:50%;transform:translateX(-50%);
+    background:var(--ink);color:#fff;padding:10px 18px;border-radius:12px;font-size:14px;
+    z-index:60;opacity:0;pointer-events:none;transition:opacity .25s;
+  }
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Oración</h1>
+    <div class="header-actions">
+      <div class="fontsize-controls">
+        <button id="btnFontMinus" aria-label="Reducir letra">A–</button>
+        <button id="btnFontPlus" aria-label="Aumentar letra">A+</button>
+      </div>
+      <button class="icon-btn" id="btnSearchToggle" aria-label="Buscar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </button>
+      <button class="icon-btn" id="btnDrive" aria-label="Google Drive">
+        <svg id="iconDriveOff" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 15.5a5.5 5.5 0 00-4.5-5.41 6.5 6.5 0 00-12.6 1.98A4.5 4.5 0 006 20.5h14a4.5 4.5 0 002-5z"/><line x1="2" y1="2" x2="22" y2="22" stroke-width="1.6"/></svg>
+        <svg id="iconDriveOn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><path d="M22 15.5a5.5 5.5 0 00-4.5-5.41 6.5 6.5 0 00-12.6 1.98A4.5 4.5 0 006 20.5h14a4.5 4.5 0 002-5z"/></svg>
+      </button>
+    </div>
+  </header>
+  <div id="driveStatusLine" class="drive-status-line" style="display:none;"></div>
+
+  <div class="search-wrap" id="searchWrap">
+    <div class="search-tabs">
+      <button class="search-tab active" id="tabSearchLocal" data-tab="local">Mis textos</button>
+      <button class="search-tab" id="tabSearchWeb" data-tab="web">Web</button>
+    </div>
+    <div id="localSearchPane">
+      <input type="text" class="search-input" id="searchInput" placeholder="Buscar por tema o palabra…">
+      <div class="search-results" id="searchResults"></div>
+    </div>
+    <div id="webSearchPane" style="display:none;">
+      <div class="web-search-row">
+        <input type="text" class="search-input" id="webSearchInput" placeholder="Buscar en la web…">
+        <button class="btn-search-web" id="btnWebSearch">Buscar en Google</button>
+      </div>
+      <div class="empty-msg" style="padding:16px 4px;text-align:left;">
+        Se abrirá tu navegador con los resultados de Google. Si encuentras un texto que quieras guardar, cópialo y pulsa el botón <strong>+</strong> para añadirlo a tus textos.
+      </div>
+    </div>
+  </div>
+
+  <div id="viewHoy">
+    <div class="date-strip" id="dateStrip"></div>
+    <div id="cardZone"></div>
+  </div>
+
+  <div id="viewLibrary" style="display:none;">
+    <h2 style="font-family:var(--font-read);color:var(--clay-dark);">Mis textos</h2>
+    <div id="libraryList"></div>
+  </div>
+</div>
+
+<button class="fab" id="btnAdd" aria-label="Añadir texto">+</button>
+
+<div class="bottombar">
+  <button id="tabHoy" class="active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+    Hoy
+  </button>
+  <button id="tabLibrary">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+    Mis textos
+  </button>
+  <button id="tabExport">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Exportar
+  </button>
+  <button id="tabImport">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    Importar
+  </button>
+</div>
+<input type="file" id="fileImport" accept="application/json" style="display:none;">
+
+<!-- MODAL AÑADIR/EDITAR -->
+<div class="overlay" id="modalOverlay">
+  <div class="modal">
+    <h2 id="modalTitle">Nuevo texto</h2>
+    <div class="field">
+      <label>Texto</label>
+      <textarea id="fContenido" placeholder="Escribe aquí…"></textarea>
+    </div>
+    <div class="field">
+      <label>Temas</label>
+      <div class="topics-input-row">
+        <input type="text" id="fTemaInput" placeholder="Escribe un tema y pulsa Añadir">
+        <button type="button" id="btnAddTema">Añadir</button>
+      </div>
+      <div class="topics-list" id="temasList"></div>
+    </div>
+    <div class="field">
+      <label>Día de la semana (opcional, se repite cada semana)</label>
+      <div class="weekday-picker" id="weekdayPicker"></div>
+      <div class="hint">Puedes marcar varios, por ejemplo "todos los jueves".</div>
+    </div>
+    <div class="field">
+      <label>Día del mes (opcional)</label>
+      <div class="radio-row">
+        <label><input type="radio" name="tipoDiaMes" value="ninguno" checked> Ninguno</label>
+        <label><input type="radio" name="tipoDiaMes" value="exacto"> Día exacto</label>
+        <label><input type="radio" name="tipoDiaMes" value="relativo"> Día relativo</label>
+      </div>
+      <div id="diaExactoWrap" style="display:none;">
+        <input type="number" id="fDiaExacto" min="1" max="31" placeholder="Día del mes (1-31)">
+      </div>
+      <div id="diaRelativoWrap" style="display:none;">
+        <div class="relative-row">
+          <select id="fOrdinal">
+            <option value="1">Primer</option>
+            <option value="2">Segundo</option>
+            <option value="3">Tercer</option>
+            <option value="4">Cuarto</option>
+            <option value="ultimo">Último</option>
+          </select>
+          <select id="fDiaSemanaRel">
+            <option value="1">Lunes</option>
+            <option value="2">Martes</option>
+            <option value="3">Miércoles</option>
+            <option value="4">Jueves</option>
+            <option value="5">Viernes</option>
+            <option value="6">Sábado</option>
+            <option value="0">Domingo</option>
+          </select>
+        </div>
+        <div class="hint">Ej: "Tercer domingo" o "Último viernes" de cada mes.</div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="btnCancelForm">Cancelar</button>
+      <button class="btn btn-primary" id="btnSaveForm">Guardar</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="toast" id="toast"></div>
+
+<!-- MODAL GOOGLE DRIVE -->
+<div class="overlay" id="driveOverlay">
+  <div class="modal">
+    <h2>Google Drive</h2>
+    <div id="driveDesconectadoWrap">
+      <p class="hint" style="margin-bottom:16px;">Guarda tus textos en tu Google Drive para acceder a ellos desde el móvil y el portátil. Se necesita un "Client ID" gratuito de Google, uno por cada dirección web donde tengas la app instalada.</p>
+      <div class="field">
+        <label>Client ID de Google</label>
+        <input type="text" id="fClientId" placeholder="xxxxxxxxxx.apps.googleusercontent.com">
+      </div>
+      <details style="margin-bottom:6px;">
+        <summary style="cursor:pointer;color:var(--clay-dark);font-weight:700;font-size:14px;">¿Cómo consigo esto gratis?</summary>
+        <ol style="font-size:13.5px;color:var(--ink-muted);line-height:1.7;padding-left:18px;margin-top:8px;">
+          <li>Entra en <strong>console.cloud.google.com</strong>, crea un proyecto.</li>
+          <li>Ve a "APIs y servicios" → "Biblioteca", busca <strong>Google Drive API</strong> y actívala.</li>
+          <li>Ve a "Pantalla de consentimiento OAuth", tipo <strong>Externa</strong>, rellena el nombre y tu correo. Dentro, en "Público de prueba" (Test users), añade tu propia cuenta de Gmail.</li>
+          <li>Ve a "Credenciales" → "Crear credenciales" → <strong>ID de cliente de OAuth</strong>, tipo <strong>Aplicación web</strong>.</li>
+          <li>En "Orígenes autorizados de JavaScript" añade exactamente la dirección de tu app (por ejemplo <code>https://tuusuario.github.io</code>, sin barra final).</li>
+          <li>Copia el <strong>ID de cliente</strong> generado y pégalo aquí arriba.</li>
+        </ol>
+      </details>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="btnCancelDrive">Cancelar</button>
+        <button class="btn btn-primary" id="btnConectarDrive">Conectar</button>
+      </div>
+    </div>
+    <div id="driveConectadoWrap" style="display:none;">
+      <p class="hint" style="margin-bottom:16px;">Conectado a Google Drive. Tus textos se guardan en el archivo <strong>oracion_datos.json</strong> dentro de tu Drive.</p>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="btnDesconectarDrive">Desconectar</button>
+        <button class="btn btn-primary" id="btnSincronizarAhora">Sincronizar ahora</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- IndexedDB ---------- */
+  let db;
+  const DB_NAME = "cadadia_db", DB_VERSION = 1;
+  function openDB(){
+    return new Promise((resolve,reject)=>{
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onupgradeneeded = (e)=>{
+        const d = e.target.result;
+        if(!d.objectStoreNames.contains("textos")) d.createObjectStore("textos",{keyPath:"id"});
+        if(!d.objectStoreNames.contains("config")) d.createObjectStore("config",{keyPath:"key"});
+      };
+      req.onsuccess = (e)=>resolve(e.target.result);
+      req.onerror = (e)=>reject(e);
+    });
+  }
+  function txStore(name, mode){ return db.transaction(name, mode).objectStore(name); }
+  function getAll(store){
+    return new Promise((resolve,reject)=>{
+      const r = txStore(store,"readonly").getAll();
+      r.onsuccess=()=>resolve(r.result); r.onerror=(e)=>reject(e);
+    });
+  }
+  function put(store, value){
+    return new Promise((resolve,reject)=>{
+      const r = txStore(store,"readwrite").put(value);
+      r.onsuccess=()=>resolve(); r.onerror=(e)=>reject(e);
+    });
+  }
+  function del(store, key){
+    return new Promise((resolve,reject)=>{
+      const r = txStore(store,"readwrite").delete(key);
+      r.onsuccess=()=>resolve(); r.onerror=(e)=>reject(e);
+    });
+  }
+  function clearStore(store){
+    return new Promise((resolve,reject)=>{
+      const r = txStore(store,"readwrite").clear();
+      r.onsuccess=()=>resolve(); r.onerror=(e)=>reject(e);
+    });
+  }
+  async function getConfig(key, fallback){
+    const r = await new Promise((resolve)=>{
+      const req = txStore("config","readonly").get(key);
+      req.onsuccess=()=>resolve(req.result); req.onerror=()=>resolve(undefined);
+    });
+    return r ? r.value : fallback;
+  }
+  async function setConfig(key, value){ await put("config", {key, value}); }
+
+  /* ---------- Utilidades de fecha ---------- */
+  const NOMBRE_DIA = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
+  const NOMBRE_MES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+  const ORDEN_UI = [1,2,3,4,5,6,0]; // lunes..domingo para mostrar en selector
+  const ABRV_DIA = {0:"D",1:"L",2:"M",3:"X",4:"J",5:"V",6:"S"};
+
+  function infoFecha(date){
+    const weekday = date.getDay();
+    const diaMes = date.getDate();
+    const anio = date.getFullYear(), mes = date.getMonth();
+    const diasEnMes = new Date(anio, mes+1, 0).getDate();
+    const ordinal = Math.ceil(diaMes/7); // 1..5
+    const esUltimo = (diaMes + 7) > diasEnMes;
+    const claveDia = anio+"-"+(mes+1)+"-"+diaMes;
+    return {weekday, diaMes, ordinal, esUltimo, claveDia};
+  }
+
+  function textoCoincideHoy(t, info){
+    if(t.diaMes && Number(t.diaMes) === info.diaMes) return true;
+    if(t.reglaRelativa){
+      const ord = t.reglaRelativa.ordinal;
+      if(t.reglaRelativa.diaSemana === info.weekday){
+        if(ord === "ultimo" && info.esUltimo) return true;
+        if(Number(ord) === info.ordinal) return true;
+      }
+    }
+    if(t.diasSemana && t.diasSemana.includes(info.weekday)) return true;
+    return false;
+  }
+
+  function describeRegla(t){
+    const partes = [];
+    if(t.diasSemana && t.diasSemana.length){
+      partes.push("Cada " + t.diasSemana.map(d=>NOMBRE_DIA[d]).join(", "));
+    }
+    if(t.diaMes){
+      partes.push("Día " + t.diaMes + " de cada mes");
+    }
+    if(t.reglaRelativa){
+      const ords = {1:"Primer",2:"Segundo",3:"Tercer",4:"Cuarto",ultimo:"Último"};
+      partes.push(ords[t.reglaRelativa.ordinal] + " " + NOMBRE_DIA[t.reglaRelativa.diaSemana]);
+    }
+    return partes.join(" · ");
+  }
+
+  function shuffle(arr){
+    const a = arr.slice();
+    for(let i=a.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]]=[a[j],a[i]];
+    }
+    return a;
+  }
+
+  /* ---------- Estado ---------- */
+  let textos = [];
+  let hoyLista = [];       // ids de textos de hoy, orden aleatorio fijo para la sesión
+  let hoyIndex = 0;
+  let fontSize = 22;
+  let editandoId = null;
+  let temasTmp = [];
+
+  const $ = (sel)=>document.querySelector(sel);
+  const cardZone = $("#cardZone");
+  const dateStrip = $("#dateStrip");
+
+  function toast(msg){
+    const el = $("#toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    setTimeout(()=>el.classList.remove("show"), 2200);
+  }
+
+  /* ---------- Render: vista Hoy ---------- */
+  function renderDateStrip(){
+    const hoy = new Date();
+    const txt = NOMBRE_DIA[hoy.getDay()] + ", " + hoy.getDate() + " de " + NOMBRE_MES[hoy.getMonth()];
+    dateStrip.innerHTML = "Hoy es <strong>"+txt+"</strong>";
+  }
+
+  async function cargarHoy(forzarNuevo){
+    const hoy = new Date();
+    const info = infoFecha(hoy);
+    const coincidentes = textos.filter(t=>textoCoincideHoy(t, info));
+    const guardado = await getConfig("posicionHoy", null);
+
+    if(!forzarNuevo && guardado && guardado.clave === info.claveDia &&
+       arraysEquivalentes(guardado.ids, coincidentes.map(t=>t.id))){
+      hoyLista = guardado.orden;
+      hoyIndex = Math.min(guardado.index, Math.max(hoyLista.length-1,0));
+    } else {
+      hoyLista = shuffle(coincidentes.map(t=>t.id));
+      hoyIndex = 0;
+      await guardarPosicionHoy(info.claveDia);
+    }
+    renderCard();
+  }
+
+  function arraysEquivalentes(a,b){
+    if(!a || a.length!==b.length) return false;
+    const sa = a.slice().sort(), sb = b.slice().sort();
+    return sa.every((v,i)=>v===sb[i]);
+  }
+
+  async function guardarPosicionHoy(clave){
+    const info = clave ? {claveDia:clave} : infoFecha(new Date());
+    await setConfig("posicionHoy", {
+      clave: info.claveDia || clave,
+      ids: hoyLista.slice(),
+      orden: hoyLista.slice(),
+      index: hoyIndex
+    });
+  }
+
+  function renderCard(){
+    document.documentElement.style.setProperty("--reading-size", fontSize+"px");
+    if(hoyLista.length === 0){
+      cardZone.innerHTML = '<div class="empty-state"><div class="big">Sin textos para hoy</div>Todavía no hay ningún texto guardado para esta fecha.<br>Pulsa + para añadir uno.</div>';
+      return;
+    }
+    const t = textos.find(x=>x.id === hoyLista[hoyIndex]);
+    if(!t){ cardZone.innerHTML = ""; return; }
+    const temasHtml = (t.temas||[]).map(tm=>'<span class="tag">'+escapeHtml(tm)+'</span>').join("");
+    cardZone.innerHTML = `
+      <div class="card">
+        <div class="card-text">${escapeHtml(t.contenido)}</div>
+        ${temasHtml ? '<div class="card-topics">'+temasHtml+'</div>' : ''}
+        <div class="card-footer">
+          <div class="nav-btns">
+            <button class="nav-btn" id="btnPrev" ${hoyIndex<=0?'disabled':''} aria-label="Anterior">‹</button>
+            <span class="nav-count">${hoyIndex+1}/${hoyLista.length}</span>
+            <button class="nav-btn" id="btnNext" ${hoyIndex>=hoyLista.length-1?'disabled':''} aria-label="Siguiente">›</button>
+          </div>
+          <div class="card-actions">
+            <button class="icon-btn" id="btnEditCurrent" aria-label="Editar">✎</button>
+          </div>
+        </div>
+      </div>`;
+    $("#btnPrev") && $("#btnPrev").addEventListener("click", ()=>{ if(hoyIndex>0){hoyIndex--; guardarPosicionHoy(); renderCard();} });
+    $("#btnNext") && $("#btnNext").addEventListener("click", ()=>{ if(hoyIndex<hoyLista.length-1){hoyIndex++; guardarPosicionHoy(); renderCard();} });
+    $("#btnEditCurrent") && $("#btnEditCurrent").addEventListener("click", ()=>abrirFormulario(t.id));
+  }
+
+  function escapeHtml(s){
+    const d = document.createElement("div");
+    d.textContent = s || "";
+    return d.innerHTML;
+  }
+
+  /* ---------- Buscador ---------- */
+  function normaliza(s){
+    return (s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  }
+  $("#searchInput").addEventListener("input", (e)=>{
+    const q = normaliza(e.target.value.trim());
+    const cont = $("#searchResults");
+    if(!q){ cont.innerHTML = ""; return; }
+    const res = textos.filter(t=>{
+      const enTexto = normaliza(t.contenido).includes(q);
+      const enTemas = (t.temas||[]).some(tm=>normaliza(tm).includes(q));
+      return enTexto || enTemas;
+    });
+    if(res.length===0){ cont.innerHTML = '<div class="empty-msg">No hay resultados.</div>'; return; }
+    cont.innerHTML = res.map(t=>{
+      const snip = (t.contenido||"").slice(0,120);
+      const temasHtml = (t.temas||[]).map(tm=>'<span class="tag">'+escapeHtml(tm)+'</span>').join("");
+      return `<div class="search-result" data-id="${t.id}">
+        <div class="snippet">${escapeHtml(snip)}${t.contenido.length>120?'…':''}</div>
+        <div class="tags">${temasHtml}</div>
+      </div>`;
+    }).join("");
+    cont.querySelectorAll(".search-result").forEach(el=>{
+      el.addEventListener("click", ()=>{
+        const id = el.dataset.id;
+        mostrarTextoIndividual(id);
+      });
+    });
+  });
+
+  function mostrarTextoIndividual(id){
+    // Cambia temporalmente la vista Hoy para mostrar este texto suelto
+    hoyLista = [id];
+    hoyIndex = 0;
+    switchTab("hoy");
+    $("#searchWrap").classList.remove("open");
+    renderCard();
+  }
+
+  $("#btnSearchToggle").addEventListener("click", ()=>{
+    $("#searchWrap").classList.toggle("open");
+    if($("#searchWrap").classList.contains("open")) $("#searchInput").focus();
+  });
+
+  /* ---------- Búsqueda en la web (abre el navegador) ---------- */
+  $("#tabSearchLocal").addEventListener("click", ()=>cambiarPestanaBusqueda("local"));
+  $("#tabSearchWeb").addEventListener("click", ()=>cambiarPestanaBusqueda("web"));
+
+  function cambiarPestanaBusqueda(tab){
+    $("#tabSearchLocal").classList.toggle("active", tab==="local");
+    $("#tabSearchWeb").classList.toggle("active", tab==="web");
+    $("#localSearchPane").style.display = tab==="local" ? "block":"none";
+    $("#webSearchPane").style.display = tab==="web" ? "block":"none";
+    if(tab==="web") $("#webSearchInput").focus();
+  }
+
+  $("#btnWebSearch").addEventListener("click", ()=>lanzarBusquedaWeb());
+  $("#webSearchInput").addEventListener("keydown", (e)=>{
+    if(e.key === "Enter"){ e.preventDefault(); lanzarBusquedaWeb(); }
+  });
+
+  function lanzarBusquedaWeb(){
+    const q = $("#webSearchInput").value.trim();
+    if(!q) return;
+    window.open("https://www.google.com/search?q="+encodeURIComponent(q), "_blank");
+  }
+
+  /* ---------- Tamaño de letra ---------- */
+  $("#btnFontPlus").addEventListener("click", async ()=>{
+    fontSize = Math.min(fontSize+2, 40);
+    await setConfig("fontSize", fontSize);
+    renderCard();
+    programarSubidaDrive();
+  });
+  $("#btnFontMinus").addEventListener("click", async ()=>{
+    fontSize = Math.max(fontSize-2, 15);
+    await setConfig("fontSize", fontSize);
+    renderCard();
+    programarSubidaDrive();
+  });
+
+  /* ---------- Navegación de pestañas ---------- */
+  function switchTab(tab){
+    $("#viewHoy").style.display = tab==="hoy" ? "block" : "none";
+    $("#viewLibrary").style.display = tab==="lib" ? "block" : "none";
+    $("#tabHoy").classList.toggle("active", tab==="hoy");
+    $("#tabLibrary").classList.toggle("active", tab==="lib");
+    if(tab==="lib") renderLibrary();
+  }
+  $("#tabHoy").addEventListener("click", ()=>switchTab("hoy"));
+  $("#tabLibrary").addEventListener("click", ()=>switchTab("lib"));
+
+  function renderLibrary(){
+    const cont = $("#libraryList");
+    if(textos.length===0){ cont.innerHTML = '<div class="empty-msg">Todavía no has guardado ningún texto.</div>'; return; }
+    const ordenados = textos.slice().sort((a,b)=>(b.creado||0)-(a.creado||0));
+    cont.innerHTML = ordenados.map(t=>{
+      const snip = (t.contenido||"").slice(0,100);
+      const temasHtml = (t.temas||[]).map(tm=>'<span class="tag">'+escapeHtml(tm)+'</span>').join("");
+      const regla = describeRegla(t);
+      return `<div class="lib-item" data-id="${t.id}">
+        <div class="snippet">${escapeHtml(snip)}${t.contenido.length>100?'…':''}</div>
+        <div class="lib-meta">${temasHtml}</div>
+        ${regla ? '<div class="hint" style="margin-top:6px;">'+escapeHtml(regla)+'</div>' : '<div class="hint" style="margin-top:6px;">Sin fecha asignada (solo aparece en la búsqueda)</div>'}
+        <div class="lib-actions">
+          <button class="edit">Editar</button>
+          <button class="del">Eliminar</button>
+        </div>
+      </div>`;
+    }).join("");
+    cont.querySelectorAll(".lib-item").forEach(el=>{
+      const id = el.dataset.id;
+      el.querySelector(".edit").addEventListener("click", ()=>abrirFormulario(id));
+      el.querySelector(".del").addEventListener("click", async ()=>{
+        if(confirm("¿Eliminar este texto? No se puede deshacer.")){
+          await del("textos", id);
+          textos = textos.filter(t=>t.id!==id);
+          renderLibrary();
+          await cargarHoy(true);
+          toast("Texto eliminado");
+          programarSubidaDrive();
+        }
+      });
+    });
+  }
+
+  /* ---------- Formulario Añadir / Editar ---------- */
+  function construirWeekdayPicker(seleccionados){
+    const cont = $("#weekdayPicker");
+    cont.innerHTML = "";
+    ORDEN_UI.forEach(d=>{
+      const chip = document.createElement("div");
+      chip.className = "weekday-chip" + (seleccionados.includes(d) ? " selected" : "");
+      chip.textContent = ABRV_DIA[d];
+      chip.dataset.dia = d;
+      chip.addEventListener("click", ()=>{
+        chip.classList.toggle("selected");
+      });
+      cont.appendChild(chip);
+    });
+  }
+
+  function renderTemasTmp(){
+    $("#temasList").innerHTML = temasTmp.map((tm,i)=>
+      `<span class="topic-chip">${escapeHtml(tm)}<button type="button" data-i="${i}">×</button></span>`
+    ).join("");
+    $("#temasList").querySelectorAll("button").forEach(b=>{
+      b.addEventListener("click", ()=>{
+        temasTmp.splice(Number(b.dataset.i),1);
+        renderTemasTmp();
+      });
+    });
+  }
+
+  $("#btnAddTema").addEventListener("click", ()=>{
+    const inp = $("#fTemaInput");
+    const v = inp.value.trim();
+    if(v && !temasTmp.includes(v)){ temasTmp.push(v); renderTemasTmp(); }
+    inp.value = "";
+    inp.focus();
+  });
+  $("#fTemaInput").addEventListener("keydown", (e)=>{
+    if(e.key === "Enter"){ e.preventDefault(); $("#btnAddTema").click(); }
+  });
+
+  document.querySelectorAll('input[name="tipoDiaMes"]').forEach(r=>{
+    r.addEventListener("change", ()=>{
+      $("#diaExactoWrap").style.display = r.value==="exacto" && r.checked ? "block":"none";
+      $("#diaRelativoWrap").style.display = r.value==="relativo" && r.checked ? "block":"none";
+    });
+  });
+
+  function abrirFormulario(id){
+    editandoId = id || null;
+    const t = id ? textos.find(x=>x.id===id) : null;
+    $("#modalTitle").textContent = t ? "Editar texto" : "Nuevo texto";
+    $("#fContenido").value = t ? t.contenido : "";
+    temasTmp = t && t.temas ? t.temas.slice() : [];
+    renderTemasTmp();
+    construirWeekdayPicker(t && t.diasSemana ? t.diasSemana : []);
+
+    let tipo = "ninguno";
+    if(t && t.diaMes) tipo = "exacto";
+    if(t && t.reglaRelativa) tipo = "relativo";
+    document.querySelectorAll('input[name="tipoDiaMes"]').forEach(r=>{
+      r.checked = (r.value === tipo);
+    });
+    $("#diaExactoWrap").style.display = tipo==="exacto" ? "block":"none";
+    $("#diaRelativoWrap").style.display = tipo==="relativo" ? "block":"none";
+    $("#fDiaExacto").value = t && t.diaMes ? t.diaMes : "";
+    if(t && t.reglaRelativa){
+      $("#fOrdinal").value = String(t.reglaRelativa.ordinal);
+      $("#fDiaSemanaRel").value = String(t.reglaRelativa.diaSemana);
+    } else {
+      $("#fOrdinal").value = "1";
+      $("#fDiaSemanaRel").value = "1";
+    }
+    $("#modalOverlay").classList.add("open");
+    $("#fContenido").focus();
+  }
+
+  function cerrarFormulario(){
+    $("#modalOverlay").classList.remove("open");
+    editandoId = null;
+  }
+
+  $("#btnAdd").addEventListener("click", ()=>abrirFormulario(null));
+  $("#btnCancelForm").addEventListener("click", cerrarFormulario);
+  $("#modalOverlay").addEventListener("click", (e)=>{ if(e.target.id==="modalOverlay") cerrarFormulario(); });
+
+  $("#btnSaveForm").addEventListener("click", async ()=>{
+    const contenido = $("#fContenido").value.trim();
+    if(!contenido){ toast("Escribe algo de texto antes de guardar"); return; }
+    const diasSemana = Array.from(document.querySelectorAll(".weekday-chip.selected")).map(c=>Number(c.dataset.dia));
+    const tipo = document.querySelector('input[name="tipoDiaMes"]:checked').value;
+    let diaMes = null, reglaRelativa = null;
+    if(tipo === "exacto"){
+      const v = Number($("#fDiaExacto").value);
+      if(v>=1 && v<=31) diaMes = v;
+    } else if(tipo === "relativo"){
+      const ordVal = $("#fOrdinal").value;
+      reglaRelativa = {
+        ordinal: ordVal === "ultimo" ? "ultimo" : Number(ordVal),
+        diaSemana: Number($("#fDiaSemanaRel").value)
+      };
+    }
+    const registro = {
+      id: editandoId || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random()),
+      contenido,
+      temas: temasTmp.slice(),
+      diasSemana,
+      diaMes,
+      reglaRelativa,
+      creado: editandoId ? (textos.find(t=>t.id===editandoId)||{}).creado || Date.now() : Date.now()
+    };
+    await put("textos", registro);
+    const idx = textos.findIndex(t=>t.id===registro.id);
+    if(idx>=0) textos[idx] = registro; else textos.push(registro);
+    cerrarFormulario();
+    toast(editandoId ? "Texto actualizado" : "Texto guardado");
+    await cargarHoy(true);
+    if($("#viewLibrary").style.display !== "none") renderLibrary();
+    programarSubidaDrive();
+  });
+
+  /* ---------- Exportar / Importar ---------- */
+  $("#tabExport").addEventListener("click", async ()=>{
+    const data = { version:1, exportado: new Date().toISOString(), textos, config:{fontSize} };
+    const blob = new Blob([JSON.stringify(data,null,2)], {type:"application/json"});
+    const fecha = new Date().toISOString().slice(0,10);
+    const filename = "oracion_backup_"+fecha+".json";
+    if(navigator.share && navigator.canShare && navigator.canShare({files:[new File([blob],filename,{type:"application/json"})]})){
+      try{
+        await navigator.share({files:[new File([blob],filename,{type:"application/json"})], title:"Copia de seguridad Oración"});
+        return;
+      }catch(err){ /* si cancela, seguimos con la descarga normal */ }
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast("Archivo descargado — muévelo a Drive cuando quieras");
+  });
+
+  $("#tabImport").addEventListener("click", ()=> $("#fileImport").click());
+  $("#fileImport").addEventListener("change", async (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    try{
+      const txt = await file.text();
+      const data = JSON.parse(txt);
+      if(!data.textos || !Array.isArray(data.textos)) throw new Error("Formato no válido");
+      const modo = confirm("Pulsa Aceptar para REEMPLAZAR todos tus textos actuales por los del archivo.\nPulsa Cancelar para AÑADIRLOS a los que ya tienes.");
+      if(modo){
+        await clearStore("textos");
+        textos = [];
+      }
+      for(const t of data.textos){
+        if(!t.id) t.id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random();
+        await put("textos", t);
+        const idx = textos.findIndex(x=>x.id===t.id);
+        if(idx>=0) textos[idx]=t; else textos.push(t);
+      }
+      await cargarHoy(true);
+      renderLibrary();
+      toast("Importación completada ("+data.textos.length+" textos)");
+      programarSubidaDrive();
+    }catch(err){
+      alert("No se pudo leer el archivo. Comprueba que sea una copia de seguridad válida de Oración.");
+    }
+    e.target.value = "";
+  });
+
+  /* ---------- Google Drive ---------- */
+  const DRIVE_FILENAME = "oracion_datos.json";
+  const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
+  let driveClientId = "";
+  let driveFileId = "";
+  let driveTokenClient = null;
+  let driveAccessToken = "";
+  let driveTokenExpira = 0;
+  let driveConectado = false;
+  let driveSyncTimer = null;
+
+  function setDriveStatus(texto, tipo){
+    const el = $("#driveStatusLine");
+    if(!texto){ el.style.display = "none"; return; }
+    el.style.display = "flex";
+    el.className = "drive-status-line" + (tipo ? " "+tipo : "");
+    el.innerHTML = '<span class="dot"></span>' + escapeHtml(texto);
+  }
+
+  function actualizarIconoDrive(){
+    $("#iconDriveOn").style.display = driveConectado ? "block" : "none";
+    $("#iconDriveOff").style.display = driveConectado ? "none" : "block";
+  }
+
+  $("#btnDrive").addEventListener("click", ()=>{
+    $("#fClientId").value = driveClientId;
+    $("#driveDesconectadoWrap").style.display = driveConectado ? "none" : "block";
+    $("#driveConectadoWrap").style.display = driveConectado ? "block" : "none";
+    $("#driveOverlay").classList.add("open");
+  });
+  $("#btnCancelDrive").addEventListener("click", ()=>$("#driveOverlay").classList.remove("open"));
+  $("#driveOverlay").addEventListener("click", (e)=>{ if(e.target.id==="driveOverlay") $("#driveOverlay").classList.remove("open"); });
+
+  $("#btnConectarDrive").addEventListener("click", async ()=>{
+    const id = $("#fClientId").value.trim();
+    if(!id){ toast("Pega antes tu Client ID"); return; }
+    driveClientId = id;
+    await setConfig("driveClientId", driveClientId);
+    iniciarConexionDrive();
+  });
+
+  $("#btnDesconectarDrive").addEventListener("click", async ()=>{
+    driveConectado = false;
+    driveAccessToken = "";
+    driveFileId = "";
+    await setConfig("driveFileId", "");
+    actualizarIconoDrive();
+    setDriveStatus("", "");
+    $("#driveOverlay").classList.remove("open");
+    toast("Desconectado de Google Drive");
+  });
+
+  $("#btnSincronizarAhora").addEventListener("click", async ()=>{
+    $("#driveOverlay").classList.remove("open");
+    await sincronizarConDrive(true);
+  });
+
+  function iniciarConexionDrive(){
+    if(typeof google === "undefined" || !google.accounts){
+      toast("No se pudo cargar el inicio de sesión de Google. Comprueba tu conexión.");
+      return;
+    }
+    if(!driveTokenClient){
+      driveTokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: driveClientId,
+        scope: DRIVE_SCOPE,
+        callback: async (resp)=>{
+          if(resp.error){
+            setDriveStatus("No se pudo conectar con Drive", "error");
+            toast("Error al conectar: " + resp.error);
+            return;
+          }
+          driveAccessToken = resp.access_token;
+          driveTokenExpira = Date.now() + (Number(resp.expires_in||3600) * 1000);
+          driveConectado = true;
+          actualizarIconoDrive();
+          $("#driveOverlay").classList.remove("open");
+          await primeraSincronizacion();
+        }
+      });
+    }
+    driveTokenClient.requestAccessToken({prompt: driveAccessToken ? "" : "consent"});
+  }
+
+  async function asegurarToken(){
+    if(driveAccessToken && Date.now() < driveTokenExpira - 60000) return true;
+    return new Promise((resolve)=>{
+      if(!driveTokenClient){
+        driveTokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: driveClientId,
+          scope: DRIVE_SCOPE,
+          callback: (resp)=>{
+            if(resp.error){ resolve(false); return; }
+            driveAccessToken = resp.access_token;
+            driveTokenExpira = Date.now() + (Number(resp.expires_in||3600) * 1000);
+            resolve(true);
+          }
+        });
+      }
+      driveTokenClient.callback = (resp)=>{
+        if(resp.error){ resolve(false); return; }
+        driveAccessToken = resp.access_token;
+        driveTokenExpira = Date.now() + (Number(resp.expires_in||3600) * 1000);
+        resolve(true);
+      };
+      driveTokenClient.requestAccessToken({prompt:""});
+    });
+  }
+
+  function driveHeaders(){
+    return {"Authorization":"Bearer "+driveAccessToken};
+  }
+
+  async function buscarArchivoDrive(){
+    const q = encodeURIComponent("name='"+DRIVE_FILENAME+"' and trashed=false");
+    const resp = await fetch("https://www.googleapis.com/drive/v3/files?q="+q+"&spaces=drive&fields=files(id,name)", {headers: driveHeaders()});
+    const data = await resp.json();
+    if(data.files && data.files.length > 0) return data.files[0].id;
+    return null;
+  }
+
+  async function crearArchivoDrive(contenidoObj){
+    const metadata = {name: DRIVE_FILENAME, mimeType: "application/json"};
+    const boundary = "oracion_boundary_" + Date.now();
+    const body =
+      "--"+boundary+"\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n"+JSON.stringify(metadata)+"\r\n"+
+      "--"+boundary+"\r\nContent-Type: application/json\r\n\r\n"+JSON.stringify(contenidoObj)+"\r\n"+
+      "--"+boundary+"--";
+    const resp = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id", {
+      method:"POST",
+      headers: Object.assign({"Content-Type":"multipart/related; boundary="+boundary}, driveHeaders()),
+      body
+    });
+    const data = await resp.json();
+    return data.id;
+  }
+
+  async function leerArchivoDrive(fileId){
+    const resp = await fetch("https://www.googleapis.com/drive/v3/files/"+fileId+"?alt=media", {headers: driveHeaders()});
+    if(!resp.ok) throw new Error("No se pudo leer el archivo de Drive");
+    return await resp.json();
+  }
+
+  async function escribirArchivoDrive(fileId, contenidoObj){
+    const resp = await fetch("https://www.googleapis.com/upload/drive/v3/files/"+fileId+"?uploadType=media", {
+      method:"PATCH",
+      headers: Object.assign({"Content-Type":"application/json"}, driveHeaders()),
+      body: JSON.stringify(contenidoObj)
+    });
+    if(!resp.ok) throw new Error("No se pudo guardar en Drive");
+  }
+
+  async function primeraSincronizacion(){
+    setDriveStatus("Conectando con Drive…", "");
+    try{
+      let fileId = await getConfig("driveFileId", "");
+      if(fileId){
+        try{ await fetch("https://www.googleapis.com/drive/v3/files/"+fileId+"?fields=id", {headers: driveHeaders()}).then(r=>{ if(!r.ok) fileId=""; }); }
+        catch(e){ fileId = ""; }
+      }
+      if(!fileId) fileId = await buscarArchivoDrive();
+
+      if(!fileId){
+        fileId = await crearArchivoDrive({version:1, textos, config:{fontSize}});
+        driveFileId = fileId;
+        await setConfig("driveFileId", fileId);
+        setDriveStatus("Conectado a Drive · copia inicial subida", "connected");
+        toast("Conectado a Google Drive");
+      } else {
+        driveFileId = fileId;
+        await setConfig("driveFileId", fileId);
+        const datosDrive = await leerArchivoDrive(fileId);
+        const hayLocal = textos.length > 0;
+        const hayDrive = datosDrive.textos && datosDrive.textos.length > 0;
+        let usarDrive = true;
+        if(hayLocal && hayDrive){
+          usarDrive = confirm("Ya tienes textos guardados aquí en el dispositivo y también en Drive.\n\nPulsa Aceptar para usar los de Drive (recomendado si ya los usabas en otro sitio).\nPulsa Cancelar para mantener los de este dispositivo y subirlos a Drive.");
+        }
+        if(usarDrive && hayDrive){
+          await clearStore("textos");
+          textos = [];
+          for(const t of datosDrive.textos){
+            await put("textos", t);
+            textos.push(t);
+          }
+          if(datosDrive.config && datosDrive.config.fontSize){
+            fontSize = datosDrive.config.fontSize;
+            await setConfig("fontSize", fontSize);
+          }
+          await cargarHoy(true);
+        } else {
+          await escribirArchivoDrive(fileId, {version:1, textos, config:{fontSize}});
+        }
+        setDriveStatus("Conectado a Google Drive", "connected");
+        toast("Conectado a Google Drive");
+      }
+      if($("#viewLibrary").style.display !== "none") renderLibrary();
+    }catch(err){
+      setDriveStatus("Error al conectar con Drive", "error");
+    }
+  }
+
+  function programarSubidaDrive(){
+    if(!driveConectado) return;
+    setDriveStatus("Cambios pendientes de guardar en Drive…", "");
+    clearTimeout(driveSyncTimer);
+    driveSyncTimer = setTimeout(()=>sincronizarConDrive(false), 1800);
+  }
+
+  async function sincronizarConDrive(manual){
+    if(!driveConectado || !driveFileId){
+      if(manual) toast("No estás conectado a Google Drive");
+      return;
+    }
+    try{
+      const ok = await asegurarToken();
+      if(!ok){ setDriveStatus("No se pudo renovar la sesión de Drive", "error"); return; }
+      await escribirArchivoDrive(driveFileId, {version:1, textos, config:{fontSize}});
+      setDriveStatus("Guardado en Google Drive", "connected");
+      if(manual) toast("Sincronizado con Google Drive");
+    }catch(err){
+      setDriveStatus("No se pudo guardar en Drive (revisa tu conexión)", "error");
+    }
+  }
+
+  async function inicializarDrive(){
+    driveClientId = await getConfig("driveClientId", "");
+    driveFileId = await getConfig("driveFileId", "");
+    if(driveClientId && driveFileId){
+      // Reconectar automáticamente si ya se había configurado antes
+      const intentarAuto = ()=>{
+        if(typeof google === "undefined" || !google.accounts){ setTimeout(intentarAuto, 400); return; }
+        iniciarConexionDrive();
+      };
+      intentarAuto();
+    }
+  }
+
+  /* ---------- Inicio ---------- */
+  async function init(){
+    db = await openDB();
+    textos = await getAll("textos");
+    fontSize = await getConfig("fontSize", 22);
+    renderDateStrip();
+    await cargarHoy(false);
+    inicializarDrive();
+
+    // Guardar posición si se cierra/oculta la app
+    document.addEventListener("visibilitychange", ()=>{
+      if(document.visibilityState === "hidden") guardarPosicionHoy();
+    });
+    window.addEventListener("pagehide", ()=>guardarPosicionHoy());
+  }
+  init();
+})();
+</script>
+</body>
+</html>
