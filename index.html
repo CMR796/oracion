@@ -543,6 +543,21 @@
     return a;
   }
 
+  function ordenarPorMenosLeidos(lista){
+    // Agrupa por nº de veces leído y baraja dentro de cada grupo,
+    // así los menos leídos salen antes, pero al azar entre los empatados.
+    const grupos = {};
+    lista.forEach(t=>{
+      const n = t.vecesLeido || 0;
+      if(!grupos[n]) grupos[n] = [];
+      grupos[n].push(t.id);
+    });
+    const claves = Object.keys(grupos).map(Number).sort((a,b)=>a-b);
+    let resultado = [];
+    claves.forEach(k=>{ resultado = resultado.concat(shuffle(grupos[k])); });
+    return resultado;
+  }
+
   /* ---------- Estado ---------- */
   let textos = [];
   let hoyLista = [];       // ids de textos de hoy, orden aleatorio fijo para la sesión
@@ -580,7 +595,7 @@
       hoyLista = guardado.orden;
       hoyIndex = Math.min(guardado.index, Math.max(hoyLista.length-1,0));
     } else {
-      hoyLista = shuffle(coincidentes.map(t=>t.id));
+      hoyLista = ordenarPorMenosLeidos(coincidentes);
       hoyIndex = 0;
       await guardarPosicionHoy(info.claveDia);
     }
@@ -603,6 +618,22 @@
     });
   }
 
+  async function marcarComoLeido(id){
+    const info = infoFecha(new Date());
+    let leidosHoy = await getConfig("leidosHoy", null);
+    if(!leidosHoy || leidosHoy.clave !== info.claveDia){
+      leidosHoy = {clave: info.claveDia, ids: []};
+    }
+    if(leidosHoy.ids.includes(id)) return; // ya contabilizado hoy
+    leidosHoy.ids.push(id);
+    await setConfig("leidosHoy", leidosHoy);
+    const t = textos.find(x=>x.id===id);
+    if(!t) return;
+    t.vecesLeido = (t.vecesLeido || 0) + 1;
+    await put("textos", t);
+    programarSubidaDrive();
+  }
+
   function renderCard(){
     document.documentElement.style.setProperty("--reading-size", fontSize+"px");
     if(hoyLista.length === 0){
@@ -611,6 +642,7 @@
     }
     const t = textos.find(x=>x.id === hoyLista[hoyIndex]);
     if(!t){ cardZone.innerHTML = ""; return; }
+    marcarComoLeido(t.id);
     const temasHtml = (t.temas||[]).map(tm=>'<span class="tag">'+escapeHtml(tm)+'</span>').join("");
     cardZone.innerHTML = `
       <div class="card">
@@ -738,10 +770,13 @@
       const snip = (t.contenido||"").slice(0,100);
       const temasHtml = (t.temas||[]).map(tm=>'<span class="tag">'+escapeHtml(tm)+'</span>').join("");
       const regla = describeRegla(t);
+      const veces = t.vecesLeido || 0;
+      const lecturaTxt = veces === 0 ? "Aún no leído" : (veces === 1 ? "Leído 1 vez" : "Leído " + veces + " veces");
       return `<div class="lib-item" data-id="${t.id}">
         <div class="snippet">${escapeHtml(snip)}${t.contenido.length>100?'…':''}</div>
         <div class="lib-meta">${temasHtml}</div>
         ${regla ? '<div class="hint" style="margin-top:6px;">'+escapeHtml(regla)+'</div>' : '<div class="hint" style="margin-top:6px;">Sin fecha asignada (solo aparece en la búsqueda)</div>'}
+        <div class="hint">${lecturaTxt}</div>
         <div class="lib-actions">
           <button class="edit">Editar</button>
           <button class="del">Eliminar</button>
@@ -871,7 +906,8 @@
       diasSemana,
       diaMes,
       reglaRelativa,
-      creado: editandoId ? (textos.find(t=>t.id===editandoId)||{}).creado || Date.now() : Date.now()
+      creado: editandoId ? (textos.find(t=>t.id===editandoId)||{}).creado || Date.now() : Date.now(),
+      vecesLeido: editandoId ? (textos.find(t=>t.id===editandoId)||{}).vecesLeido || 0 : 0
     };
     await put("textos", registro);
     const idx = textos.findIndex(t=>t.id===registro.id);
